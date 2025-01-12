@@ -1,0 +1,19 @@
+{
+    "name": "ollama-web",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start"
+    },
+    "dependencies": {
+        "isomorphic-unfetch": "^4.0.2",
+        "jquery": "^3.7.1",
+        "next": "^13.0.0",
+        "ollama": "^0.5.11",
+        "react": "^18.0.0",
+        "react-dom": "^18.0.0",
+        "@microsoft/signalr": "^6.0.1"
+    }
+}
