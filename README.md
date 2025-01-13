@@ -57,4 +57,6 @@ connection.on("AiResponse", (message) => {
 ```
 
 
-[Video](https://www.loom.com/share/18cf01757eb446568f4862c0c0ca0e85?sid=aa97230e-baed-47fd-8ec7-0a7fb304cc52)
+[Video 1: Overall](https://www.loom.com/share/18cf01757eb446568f4862c0c0ca0e85?sid=aa97230e-baed-47fd-8ec7-0a7fb304cc52)
+
+[Video 2: Performance testing](https://www.loom.com/share/68528a537b6a47d4b1c6d46c796ec336?sid=b531bf86-9a6b-4b45-913c-4b3f31eca74c)
