@@ -54,8 +54,8 @@ public class QueueService : IAsyncDisposable
             chatHistory.Add(new ChatMessage(ChatRole.Assistant, response.ToString()));
             await _hub.SendMessageToClient(request.UserId, response.ToString());
         };
-        await _channel.BasicConsumeAsync(RoutingKey, autoAck: true, consumer: consumer);
         await _channel.QueueDeclareAsync(RoutingKey, false, false, false);
+        await _channel.BasicConsumeAsync(RoutingKey, autoAck: true, consumer: consumer);
     }
 
     public ValueTask Enqueue(AiRequest request)
