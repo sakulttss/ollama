@@ -1,3 +1,3 @@
 ﻿namespace server.Models;
 
-public sealed record AiRequest(string UserId, string Prompt);
+public sealed record AiRequest(string UserId, string Prompt, bool RequiredStreaming);

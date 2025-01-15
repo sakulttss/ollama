@@ -1,4 +1,5 @@
-﻿using server.Models;
+﻿using Microsoft.AspNetCore.Mvc;
+using server.Models;
 using server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,7 +23,7 @@ await app.Services.CreateScope().ServiceProvider.GetRequiredService<QueueService
 app.UseHttpsRedirection();
 app.UseCors();
 app.MapHub<ChatHub>("/hub");
-app.MapGet("/api/chat/{userId}/{prompt}", (string userId, string prompt, QueueService queue)
-    => queue.Enqueue(new AiRequest(userId, prompt)));
+app.MapGet("/api/chat/{userId}/{prompt}", (string userId, string prompt, [FromQuery] bool streaming, QueueService queue)
+    => queue.Enqueue(new AiRequest(userId, prompt, streaming)));
 
 app.Run();

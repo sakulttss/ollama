@@ -1,8 +1,23 @@
 ﻿using Flurl.Http;
 using Microsoft.AspNetCore.SignalR.Client;
 
+static async Task ShowMessageFromSignalR(string msg)
+{
+    Console.ForegroundColor = ConsoleColor.DarkGreen;
+    if (msg == "[$ENDED$]")
+    {
+        await Console.Out.WriteLineAsync();
+    }
+    else
+    {
+        await Console.Out.WriteAsync(msg);
+    }
+    Console.ForegroundColor = ConsoleColor.White;
+};
+
 try
 {
+    var isStreaming = true;
     List<string> questions =
     [
         "Tell me a joke",
@@ -18,21 +33,27 @@ try
         .WithUrl($"{Host}/hub")
         .Build();
 
-    connection.On<string>("AiResponse", Console.Out.WriteLineAsync);
+    connection.On<string>("AiResponse", ShowMessageFromSignalR);
+    connection.On<string>("AiStreamResponse", ShowMessageFromSignalR);
 
     await connection.StartAsync();
-    Console.WriteLine("Connection started, Enter message (or 'exit' to close).");
 
     foreach (var question in questions)
     {
-        await $"{Host}/api/chat/{connection.ConnectionId}/{question}".GetAsync();
+        await Console.Out.WriteAsync($"Question: {question}");
+        var response = await $"{Host}/api/chat/{connection.ConnectionId}/{question}?streaming={isStreaming}".GetJsonAsync<AiResponse>();
+        await Console.Out.WriteLineAsync($" (Wait: {response.WaitingCount} | QueueNo: {response.QueueNo})");
     }
 
     await Console.In.ReadLineAsync();
     await connection.DisposeAsync();
     Console.WriteLine("Connection closed");
+    await connection.StopAsync();
+    await connection.DisposeAsync();
 }
 catch (Exception ex)
 {
     Console.WriteLine(ex.Message);
 }
+
+public sealed record AiResponse(string UserId, ulong QueueNo, ulong WaitingCount);
