@@ -7,6 +7,7 @@ const ChatComponent = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [connection, setConnection] = useState(null);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   useEffect(() => {
     const connectSignalR = async () => {
@@ -28,9 +29,32 @@ const ChatComponent = () => {
         await connectSignalR();
       });
 
+      connection.on("AiStreamResponse", (message) => {
+        if (message === "[$ENDED$]") {
+          setLoading(false);
+          return;
+        }
+
+        setMessages((prevMessages) => {
+          const lastMessage = prevMessages[prevMessages.length - 1];
+          if (lastMessage && lastMessage.role === 'assistant') {
+            // Append the new text to the last assistant message
+            const updatedMessage = { ...lastMessage, content: lastMessage.content + message };
+            return [...prevMessages.slice(0, -1), updatedMessage];
+          } else {
+            // Add a new assistant message if there is no previous assistant message
+            const assistantMessage = { role: 'assistant', content: message };
+            return [...prevMessages, assistantMessage];
+          }
+        });
+      });
+
       connection.on("AiResponse", (message) => {
-        const assistantMessage = { role: 'assistant', content: message };
-        setMessages((prevMessages) => [...prevMessages, assistantMessage]);
+        setLoading(false);
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { role: 'assistant', content: message }
+        ]);
       });
     };
 
@@ -44,7 +68,7 @@ const ChatComponent = () => {
     setLoading(true);
 
     try {
-      await fetch(`https://localhost:7279/api/chat/${connection.connectionId}/${encodeURIComponent(input)}`);
+      await fetch(`https://localhost:7279/api/chat/${connection.connectionId}/${encodeURIComponent(input)}?streaming=${isStreaming}`);
     } catch (error) {
       console.error('Error fetching message:', error);
     } finally {
@@ -82,6 +106,14 @@ const ChatComponent = () => {
             onKeyDown={handleKeyDown}
           />
           <button onClick={handleSend}>Send</button>
+          <label>
+            <input
+              type="checkbox"
+              checked={isStreaming}
+              onChange={(e) => setIsStreaming(e.target.checked)}
+            />
+            Streaming
+          </label>
         </div>
       </div>
       <style jsx>{`
