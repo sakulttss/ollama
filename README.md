@@ -65,3 +65,5 @@ connection.on("AiResponse", (message) => {
 [Video 2: Performance testing](https://www.loom.com/share/68528a537b6a47d4b1c6d46c796ec336?sid=b531bf86-9a6b-4b45-913c-4b3f31eca74c)
 
 [Video 3: Queue No & Realtime response](https://www.loom.com/share/b76533697c954bd29f65ebcc0961a8fa?sid=da296aea-b2e6-443d-815d-ce7f9c71e51d)
+
+[Video 4: Show waiting queue](https://www.loom.com/share/26b3bdaa6ede4fd9b948c88eb93150cd?sid=15181f09-f872-44ca-8da8-bfbd0971c061)
