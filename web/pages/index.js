@@ -7,13 +7,15 @@ const ChatComponent = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [connection, setConnection] = useState(null);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(true);
+  const [queueNo, setQueueNo] = useState(null);
+  const [workingQueueNo, setWorkingQueueNo] = useState(null);
+  const [waiting, setWaiting] = useState(0);
 
   useEffect(() => {
     const connectSignalR = async () => {
       const connection = new HubConnectionBuilder()
         .withUrl("https://localhost:7279/hub")
-        .configureLogging(signalR.LogLevel.Information)
         .build();
       try {
         await connection.start();
@@ -56,10 +58,15 @@ const ChatComponent = () => {
           { role: 'assistant', content: message }
         ]);
       });
+
+      connection.on("NextQueue", (workingOnQueueNumber) => {
+        setWorkingQueueNo(workingOnQueueNumber);
+        calculateWaiting();
+      });
     };
 
     connectSignalR();
-  }, []);
+  }, [queueNo]);
 
   const handleSend = async () => {
     const userMessage = { role: 'user', content: input };
@@ -68,12 +75,26 @@ const ChatComponent = () => {
     setLoading(true);
 
     try {
-      await fetch(`https://localhost:7279/api/chat/${connection.connectionId}/${encodeURIComponent(input)}?streaming=${isStreaming}`);
+      var response = fetch(`https://localhost:7279/api/chat/${connection.connectionId}/${encodeURIComponent(input)}?streaming=${isStreaming}`);
+      response.then(async it => {
+        var data = await it.json();
+        setQueueNo(data.queueNo);
+        calculateWaiting();
+      });
     } catch (error) {
       console.error('Error fetching message:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const calculateWaiting = async () => {
+    if (workingQueueNo === null || queueNo === null) {
+      return;
+    }
+    console.warn("workingOnQueueNumber:" + workingQueueNo + ", queueNo: " + queueNo)
+    var diff = queueNo - workingQueueNo;
+    setWaiting(diff);
   };
 
   const handleKeyDown = (event) => {
@@ -86,8 +107,6 @@ const ChatComponent = () => {
     <div>
       <Head>
         <title>Ollama Chat</title>
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
       </Head>
       <div className="chat-container">
         <div className="messages">
@@ -115,6 +134,11 @@ const ChatComponent = () => {
             Streaming
           </label>
         </div>
+        {queueNo !== null && waiting !== null && (
+          <div>
+            <strong>Waiting</strong> {waiting} <strong>queue</strong>
+          </div>
+        )}
       </div>
       <style jsx>{`
         .chat-container {
