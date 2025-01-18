@@ -19,6 +19,9 @@ public sealed class ChatHub : Hub
         return history;
     }
 
+    public Task SendNextQueue(ulong queueNo)
+        => Clients.All.SendAsync("NextQueue", queueNo);
+
     public Task SendMessageToClient(string connectionId, string? message)
         => SendMessage("AiResponse", connectionId, message);
 

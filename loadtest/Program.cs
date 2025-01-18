@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 
 static async Task ShowMessageFromSignalR(string msg)
 {
-    Console.ForegroundColor = ConsoleColor.DarkGreen;
+    Console.ForegroundColor = ConsoleColor.DarkYellow;
     if (msg == "[$ENDED$]")
     {
         await Console.Out.WriteLineAsync();
@@ -18,14 +18,17 @@ static async Task ShowMessageFromSignalR(string msg)
 try
 {
     var isStreaming = true;
+    var trackingList = new List<RequestTracking>();
     List<string> questions =
     [
+        "Greeting!",
+        "Who are you?",
         "Tell me a joke",
         "What is the weather in London?",
         "What is the time?",
-        "How the stock market is doing?",
-        "Is a tomato a fruit or a vegetable?",
-        "What is the capital of France?",
+        //"How the stock market is doing?",
+        //"Is a tomato a fruit or a vegetable?",
+        //"What is the capital of France?",
     ];
 
     const string Host = "https://localhost:7279";
@@ -35,14 +38,22 @@ try
 
     connection.On<string>("AiResponse", ShowMessageFromSignalR);
     connection.On<string>("AiStreamResponse", ShowMessageFromSignalR);
+    connection.On<ulong>("NextQueue", currentQueueNo =>
+    {
+        Console.WriteLine();
+        trackingList.ForEach(it => it.Dequeue());
+        trackingList.FirstOrDefault(it => it.QueueNo == currentQueueNo)?.TrackResponse();
+        trackingList.ForEach(it => it.ShowStatus());
+    });
 
     await connection.StartAsync();
 
     foreach (var question in questions)
     {
-        await Console.Out.WriteAsync($"Question: {question}");
+        var tracking = new RequestTracking { Question = question };
+        trackingList.Add(tracking);
         var response = await $"{Host}/api/chat/{connection.ConnectionId}/{question}?streaming={isStreaming}".GetJsonAsync<AiResponse>();
-        await Console.Out.WriteLineAsync($" (Wait: {response.WaitingCount} | QueueNo: {response.QueueNo})");
+        tracking.UpdateStatus(response);
     }
 
     await Console.In.ReadLineAsync();
@@ -57,3 +68,49 @@ catch (Exception ex)
 }
 
 public sealed record AiResponse(string UserId, ulong QueueNo, ulong WaitingCount);
+
+file class RequestTracking
+{
+    private bool _isSecondTime;
+    private bool _gotResponse;
+    public required string Question { get; init; }
+    public ulong QueueNo { get; private set; }
+    public ulong WaitingQueueCount { get; private set; }
+
+    public void UpdateStatus(AiResponse response)
+    {
+        QueueNo = response.QueueNo;
+        WaitingQueueCount = response.WaitingCount;
+    }
+
+    public void TrackResponse()
+        => _gotResponse = true;
+
+    public void Dequeue()
+        => --WaitingQueueCount;
+
+    public void ShowStatus()
+    {
+        var postfix = string.Empty;
+        if (_gotResponse)
+        {
+            if (_isSecondTime)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+            }
+            else
+            {
+                _isSecondTime = true;
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+            }
+        }
+        else
+        {
+            postfix = $"[Waiting: {WaitingQueueCount}]";
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+        }
+
+        Console.WriteLine($"(Queue: {QueueNo}) {Question} {postfix}");
+        Console.ForegroundColor = ConsoleColor.White;
+    }
+}

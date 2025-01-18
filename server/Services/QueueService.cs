@@ -40,9 +40,11 @@ public class QueueService : IAsyncDisposable
         var consumer = new AsyncEventingBasicConsumer(_channel);
         consumer.ReceivedAsync += async (model, ea) =>
         {
+            await Task.Delay(77);
             var message = Encoding.UTF8.GetString(ea.Body.ToArray());
             var request = JsonSerializer.Deserialize<AiRequest>(message)
                 ?? throw new ArgumentNullException();
+            await _hub.SendNextQueue(++DeliveryCount);
             if (!_hub.ClientExists(request.UserId))
             {
                 Console.ForegroundColor = ConsoleColor.DarkRed;
@@ -51,7 +53,6 @@ public class QueueService : IAsyncDisposable
                 return;
             }
 
-            DeliveryCount++;
             await Console.Out.WriteLineAsync($"(Queue:{DeliveryCount}) Working with user: {request.UserId}, prompt: '{request.Prompt}'");
             using var chatClient = new OllamaChatClient(new Uri(aiServer.Host), aiServer.Model);
             var chatHistory = ChatHub.GetChatMessages(request);
